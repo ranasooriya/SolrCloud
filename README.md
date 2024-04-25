@@ -1,2 +1,2 @@
-# sudo-portal
-SUDO Access Automation System
+# SolrCloud
+Solr Cloud with Docker
