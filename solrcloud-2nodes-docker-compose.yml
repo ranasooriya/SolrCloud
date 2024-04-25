@@ -1,0 +1,148 @@
+version: "3.8"
+
+services:
+  zookeeper-node1:
+    hostname: zookeeper-node1
+    image: bitnami/zookeeper:3.6.2
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node1
+    ports:
+      - 21811:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_SERVER_ID=1
+      - ZOO_SERVERS=zookeeper-node1:2888:3888,zookeeper-node2:2888:3888,zookeeper-node3:2888:3888
+      - ZOO_4LW_COMMANDS_WHITELIST=mntr,conf,ruok
+
+  zookeeper-node2:
+    hostname: zookeeper-node2
+    image: bitnami/zookeeper:3.6.2
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node2
+    ports:
+      - 21812:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_SERVER_ID=2
+      - ZOO_SERVERS=zookeeper-node1:2888:3888,zookeeper-node2:2888:3888,zookeeper-node3:2888:3888
+      - ZOO_4LW_COMMANDS_WHITELIST=mntr,conf,ruok
+    depends_on:
+      - zookeeper-node1
+
+  zookeeper-node3:
+    hostname: zookeeper-node3
+    image: bitnami/zookeeper:3.6.2
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node3
+    ports:
+      - 21813:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_SERVER_ID=3
+      - ZOO_SERVERS=zookeeper-node1:2888:3888,zookeeper-node2:2888:3888,zookeeper-node3:2888:3888
+      - ZOO_4LW_COMMANDS_WHITELIST=mntr,conf,ruok
+    depends_on:
+      - zookeeper-node2
+
+  zookeeper-navigator:
+    hostname: zookeeper-navigator
+    image: elkozmon/zoonavigator
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node1
+    environment:
+      HTTP_PORT: 9090
+    ports:
+      - 9090:9090
+    depends_on:
+      - zookeeper-node3
+
+  solr-node1:
+    hostname: solr-node1
+    image: bitnami/solr:8.11.1
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node1
+    ports:
+     - 8981:8983
+    environment:
+      - SOLR_PORT=8981
+      - SOLR_CORES=STPersonalArchive
+      - SOLR_ENABLE_CLOUD_MODE=yes
+      - SOLR_CLOUD_BOOTSTRAP=yes
+      - SOLR_NUMBER_OF_NODES=3
+      - SOLR_COLLECTION=STPersonalArchive
+      - SOLR_COLLECTION_SHARDS=3
+      - SOLR_COLLECTION_REPLICAS=1
+      - SOLR_HOST=solr-node1
+      - SOLR_ZK_HOSTS=zookeeper-node1:2181,zookeeper-node2:2181,zookeeper-node3:2181
+    depends_on:
+      - zookeeper-navigator
+
+  solr-node2:
+    hostname: solr-node2
+    image: bitnami/solr:8.11.1
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node2
+    ports:
+     - 8982:8983
+    environment:
+      - SOLR_PORT=8982
+      - SOLR_CORES=STPersonalArchive
+      - SOLR_ENABLE_CLOUD_MODE=yes
+      - SOLR_CLOUD_BOOTSTRAP=yes
+      - SOLR_NUMBER_OF_NODES=3
+      - SOLR_COLLECTION=STPersonalArchive
+      - SOLR_COLLECTION_SHARDS=3
+      - SOLR_COLLECTION_REPLICAS=1
+      - SOLR_HOST=solr-node2
+      - SOLR_ZK_HOSTS=zookeeper-node1:2181,zookeeper-node2:2181,zookeeper-node3:2181
+    depends_on:
+      - solr-node1
+
+  solr-node3:
+    hostname: solr-node3
+    image: bitnami/solr:8.11.1
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.dc == node3
+    ports:
+     - 8983:8983
+    environment:
+      - SOLR_PORT=8983
+      - SOLR_CORES=STPersonalArchive
+      - SOLR_ENABLE_CLOUD_MODE=yes
+      - SOLR_CLOUD_BOOTSTRAP=yes
+      - SOLR_NUMBER_OF_NODES=3
+      - SOLR_COLLECTION=STPersonalArchive
+      - SOLR_COLLECTION_SHARDS=3
+      - SOLR_COLLECTION_REPLICAS=1
+      - SOLR_HOST=solr-node3
+      - SOLR_ZK_HOSTS=zookeeper-node1:2181,zookeeper-node2:2181,zookeeper-node3:2181
+    depends_on:
+      - solr-node2
